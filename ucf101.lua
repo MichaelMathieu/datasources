@@ -90,6 +90,7 @@ function UCF101Datasource:orderedIterator(batchSize, set)
    local class_idx = 1
    local video_idx = 1
    local frame_idx = 1
+   local thffmpeg2 = THFFmpeg()
    return function()
       self.output_cpu:resize(batchSize, self.nInputFrames, self.nChannels,
 			     self.h, self.w)
@@ -99,35 +100,35 @@ function UCF101Datasource:orderedIterator(batchSize, set)
 	 while not done do
 	    local class = self.classes[class_idx]
 	    local filepath = paths.concat(self.datapath, class, self.sets[set][class][video_idx])
-	    --TODO: could be much faster (don't close+open the videos)
-	    if (self.thffmpeg:open(filepath)) then
-	       if self.nbframes[filepath] == nil then
-		  self.nbframes[filepath] = self.thffmpeg:length()
-	       end
-	       local nframes = self.nbframes[filepath]
-	       if nframes >= self.nInputFrames + frame_idx - 1 then
-		  self.labels_cpu[i] = class_idx
-		  self.thffmpeg:seek(frame_idx-1)
-		  for j = 1, self.nInputFrames do
-		     self.thffmpeg:next_frame(self.output_cpu[i][j])
+	    local goodvid = true
+	    if frame_idx == 1 then
+	       goodvid = thffmpeg2:open(filepath)
+	    end
+	    if goodvid then
+	       self.labels_cpu[i] = class_idx
+	       for j = 1, self.nInputFrames do
+		  if not thffmpeg2:next_frame(self.output_cpu[i][j]) then
+		     done, goodvid = false, false
+		     break
 		  end
-		  frame_idx = frame_idx + self.nInputFrames
-		  done = true
-	       else
-		  video_idx = video_idx + 1
-		  if video_idx > #self.sets[set][class] then
-		     class_idx = class_idx + 1
-		     if class_idx > self.nClasses then
-			self.thffmpeg:close()
-			return nil
-		     end
-		  end
-		  frame_idx = 1
 	       end
+	       done = true
+	       frame_idx = frame_idx + self.nInputFrames
+	    end
+	    if not goodvid then
+	       video_idx = video_idx + 1
+	       if video_idx > #self.sets[set][class] then
+		  class_idx = class_idx + 1
+		  video_idx = 1
+		  if class_idx > self.nClasses then
+		     thffmpeg2:close()
+		     return nil
+		  end
+	       end
+	       frame_idx = 1
 	    end
 	 end
       end
-      self.thffmpeg:close()
       return self:typeResults(self.output_cpu, self.labels_cpu)
    end
 end
