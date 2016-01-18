@@ -32,7 +32,7 @@ function ClassDatasource:typeResults(output, labels)
       self.labels_gpu:resize(labels:size()):copy(labels)
       return {self.output_gpu, self.labels_gpu}
    else
-      return {output, labels}
+      return output, labels
    end
 end
 

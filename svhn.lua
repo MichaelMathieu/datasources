@@ -44,16 +44,16 @@ function SVHNDatasource:nextBatch(batchSize, set)
    return self:typeResults(self.output_cpu, self.labels_cpu)
 end
 
-function SVHNDatasource:nextIteratedBatchPerm(batchSize, set, idx, perm)
-   error("todo")
-end
-
-function SVHNDatasource:nextIteratedBatch(batchSize, set, idx)
-   assert(idx > 0)
-   if idx*batchSize > self.data[set]:size(1) then
-      return nil
-   else
-      return self:typeResults(self.data[set]:narrow(1, (idx-1)*batchSize+1, batchSize),
-			      self.labels[set]:narrow(1, (idx-1)*batchSize+1, batchSize))
+function SVHNDatasource:orderedIterator(batchSize, set)
+   local idx = 1
+   return function()
+      if idx*batchSize > self.data[set]:size(1) then
+	 return nil
+      else
+	 local outputs = self.data[set]:narrow(1, (idx-1)*batchSize+1, batchSize)
+	 local labels = self.labels[set]:narrow(1, (idx-1)*batchSize+1, batchSize)
+	 idx = idx + 1
+	 return self:typeResults(outputs, labels)
+      end
    end
 end
