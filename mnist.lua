@@ -34,7 +34,8 @@ function MNISTDatasource:nextIteratedBatch(batchSize, set, idx)
    if idx*batchSize > self.data[set]:size(1) then
       return nil
    else
-      return self:typeResults(self.data[set]:narrow(1, (idx-1)*batchSize+1, batchSize),
-			      self.labels[set]:narrow(1, (idx-1)*batchSize+1, batchSize))
+      local outputs = self.data[set]:narrow(1, (idx-1)*batchSize+1, batchSize)
+      local labels = self.labels[set]:narrow(1, (idx-1)*batchSize+1, batchSize)
+      return self:typeResults(outputs, labels)
    end
 end

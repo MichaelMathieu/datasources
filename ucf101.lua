@@ -47,6 +47,7 @@ function UCF101Datasource:__init(nInputFrames)
    self.nChannels, self.nClasses = 3, 101
    self.h, self.w = 240, 320
    self.thffmpeg = THFFmpeg()
+   print("TODO centering")
 end
 
 function UCF101Datasource:nextBatch(batchSize, set)
@@ -78,9 +79,9 @@ function UCF101Datasource:nextBatch(batchSize, set)
       end
    end
    self.thffmpeg:close()
-   return self.output_cpu, self.labels_cpu
+   return self:typeResults(self.output_cpu, self.labels_cpu)
 end
 
 function UCF101Datasource:nextIteratedBatch(batchSize, set, idx)
-   error("Not implemented")
+   error("not implemented")
 end
