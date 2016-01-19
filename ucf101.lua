@@ -51,7 +51,6 @@ function UCF101Datasource:__init(nInputFrames)
    self.nChannels, self.nClasses = 3, 101
    self.h, self.w = 240, 320
    self.thffmpeg = THFFmpeg()
-   print("TODO centering")
 end
 
 function UCF101Datasource:nextBatch(batchSize, set)
@@ -83,6 +82,7 @@ function UCF101Datasource:nextBatch(batchSize, set)
       end
    end
    self.thffmpeg:close()
+   self.output_cpu:mul(2/255):add(-1)
    return self:typeResults(self.output_cpu, self.labels_cpu)
 end
 

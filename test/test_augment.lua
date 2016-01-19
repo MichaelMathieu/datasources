@@ -1,12 +1,12 @@
 require 'datasources.augment'
 require 'datasources.svhn'
 require 'datasources.mnist'
+require 'datasources.ucf101'
 
 datasource = AugmentDatasource(SVHNDatasource(), {flip = 0,
 						  crop = {25,20},
 						  scaleup = 1.2,
-						  rotate = 1})
-datasource = SVHNDatasource()
+						  rotate = 0.5})
 
 require 'image'
 
