@@ -25,6 +25,15 @@ function ThreadedDatasource:__init(getDatasourceFun, params)
 	 threadid_t = threadid
 	 datasource_t = getDatasourceFun()
       end)
+   self.donkeys:addjob(
+      function()
+	 return datasource_t.nChannels, datasource_t.nClasses, datasource_t.h, datasource_t.w
+      end,
+      function(nChannels, nClasses, h, w)
+	 self.nChannels, self.nClasses = nChannels, self.nClasses
+	 self.h, self.w = h, w
+      end)
+   self.donkeys:synchronize()
    self.started = false
    self.output, self.labels = self.output_cpu, self.labels_cpu
 end
