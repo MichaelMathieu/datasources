@@ -29,6 +29,8 @@ function SVHNDatasource:__init()
 end
 
 function SVHNDatasource:nextBatch(batchSize, set)
+   assert(batchSize ~= nil, 'nextBatch: must specify batchSize')
+   assert(self.data[set] ~= nil, 'Unknown set ' .. set)
    self.output_cpu:resize(batchSize, self.nChannels, self.h, self.w)
    self.labels_cpu:resize(batchSize)
    if set == 'train+extra' then
@@ -51,6 +53,8 @@ function SVHNDatasource:nextBatch(batchSize, set)
 end
 
 function SVHNDatasource:orderedIterator(batchSize, set)
+   assert(batchSize ~= nil, 'nextBatch: must specify batchSize')
+   assert(self.data[set] ~= nil, 'Unknown set ' .. set)
    local idx = 1
    return function()
       if idx*batchSize > self.data[set]:size(1) then

@@ -8,6 +8,7 @@ local UCF101Datasource, parent = torch.class('UCF101Datasource', 'ClassDatasourc
 
 function UCF101Datasource:__init(nInputFrames)
    parent.__init(self)
+   assert(nInputFrames ~= nil, "UCF101Dataset: must specify nInputFrames")
    self.datapath = '/scratch/datasets/ucf101/UCF-101'
    local setfiles = {train = 'trainlist01.txt', test = 'testlist01.txt'}
    assert(paths.dirp(self.datapath), 'Path ' .. self.datapath .. ' does not exist')
@@ -54,6 +55,7 @@ function UCF101Datasource:__init(nInputFrames)
 end
 
 function UCF101Datasource:nextBatch(batchSize, set)
+   assert(batchSize ~= nil, 'nextBatch: must specify batchSize')
    assert(self.sets[set] ~= nil, 'Unknown set ' .. set)
    self.output_cpu:resize(batchSize, self.nInputFrames, self.nChannels, self.h, self.w)
    self.labels_cpu:resize(batchSize)
@@ -87,6 +89,8 @@ function UCF101Datasource:nextBatch(batchSize, set)
 end
 
 function UCF101Datasource:orderedIterator(batchSize, set)
+   assert(batchSize ~= nil, 'nextBatch: must specify batchSize')
+   assert(self.sets[set] ~= nil, 'Unknown set ' .. set)
    local class_idx = 1
    local video_idx = 1
    local frame_idx = 1

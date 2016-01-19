@@ -63,12 +63,19 @@ function ThreadedDatasource:nextBatch(batchSize, set)
       self.donkeys:dojob()
       addjob()
    end
+   if self.donkeys:haserror() then
+      print("ThreadedDatasource: There is an error in a donkey")
+      self.donkeys:terminate()
+      os.exit(0)
+   end
    return self.output, self.labels
 end
 
 function ThreadedDatasource:orderedIterator(batchSize, set)
    -- this one doesn't parallelize on more than one thread
    -- (this might be a TODO but seems hard)
+   assert(batchSize ~= nil, 'nextBatch: must specify batchSize')
+   assert(set ~= nil, 'nextBatch: must specify set')
    self.donkeys:specific(true)
    self.donkeys:synchronize()
    self.started = false

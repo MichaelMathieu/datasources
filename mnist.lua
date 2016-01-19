@@ -25,6 +25,8 @@ function MNISTDatasource:__init()
 end
 
 function MNISTDatasource:nextBatch(batchSize, set)
+   assert(batchSize ~= nil, 'nextBatch: must specify batchSize')
+   assert(self.data[set] ~= nil, 'Unknown set ' .. set)
    self.output_cpu:resize(batchSize, self.nChannels, self.h, self.w)
    self.labels_cpu:resize(batchSize)
    for i = 1, batchSize do
@@ -36,6 +38,8 @@ function MNISTDatasource:nextBatch(batchSize, set)
 end
 
 function MNISTDatasource:orderedIterator(batchSize, set)
+   assert(batchSize ~= nil, 'nextBatch: must specify batchSize')
+   assert(self.data[set] ~= nil, 'Unknown set ' .. set)
    local idx = 1
    return function()
       if idx*batchSize > self.data[set]:size(1) then
