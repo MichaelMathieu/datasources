@@ -1,3 +1,8 @@
+--[[
+   classes are from 1 to 10 where 1 corresponds to the digit 0
+   and 10 to the digit 9 (UNLIKE SVHN!!)
+--]]
+
 require 'datasources.datasource'
 require 'paths'
 

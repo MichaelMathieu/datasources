@@ -67,7 +67,6 @@ function ClassDatasource:type(typ)
       self.labels_gpu = torch.CudaTensor()
    else
       self.output_cpu = self.output_cpu:type(typ)
-      self.labels_cpu = self.labels_cpu:type(typ)
       self.output_gpu = nil
       self.labels_gpu = nil
       collectgarbage()

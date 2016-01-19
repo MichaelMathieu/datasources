@@ -47,8 +47,8 @@ function ThreadedDatasource:nextBatch(batchSize, set)
 	    return datasource_t:nextBatch(batchSize, set)
 	 end,
 	 function(outputs, labels)
-	    self.output:resizeAs(outputs):copy(outputs)
-	    self.labels:resizeAs(labels):copy(labels)
+	    self.output:resize(outputs:size()):copy(outputs)
+	    self.labels:resize(labels:size()):copy(labels)
 	    self.last_config = {batchSize, set}
 	 end)
    end
@@ -85,8 +85,8 @@ function ThreadedDatasource:orderedIterator(batchSize, set)
 	    if output == nil then
 	       finished = true
 	    else
-	       self.output:resizeAs(outputs):copy(outputs)
-	       self.labels:resizeAs(labels):copy(labels)
+	       self.output:resize(output:size()):copy(output)
+	       self.labels:resize(labels:size()):copy(labels)
 	    end
 	 end)
    end

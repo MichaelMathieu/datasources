@@ -1,3 +1,9 @@
+--[[
+   classes are from 1 to 10 where 1 corresponds to the digit 1,
+   9 corresponds to the digit 9 and 10 corresponds to the digit 0
+   (UNLIKE MNIST)
+--]]
+
 require 'datasources.datasource'
 require 'paths'
 
@@ -14,7 +20,7 @@ function SVHNDatasource:__init()
    self.data, self.labels = {}, {}
    for k, v in pairs(raw_sets) do
       self.data[k] = v.X:type(torch.getdefaulttensortype())
-      self.labels[k] = v.y:squeeze(1)
+      self.labels[k] = v.y:squeeze(1):long()
    end
    self:normalize(self.data.train, self.data)
 
