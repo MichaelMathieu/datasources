@@ -9,7 +9,7 @@
 require 'datasources.datasource'
 local threads = require 'threads'
 
-local ThreadedDatasource, parent = torch.class('ThreadedDataset', 'ClassDatasource')
+local ThreadedDatasource, parent = torch.class('ThreadedDatasource', 'ClassDatasource')
 
 function ThreadedDatasource:__init(getDatasourceFun, params)
    parent.__init(self)
@@ -18,10 +18,15 @@ function ThreadedDatasource:__init(getDatasourceFun, params)
    self.donkeys = threads.Threads(self.nDonkeys,
       function(threadid)
 	 require 'torch'
+	 require 'math'
+	 require 'os'
+	 torch.manualSeed(threadid*os.clock())
+	 math.randomseed(threadid*os.clock()*1.7)
 	 threadid_t = threadid
 	 datasource_t = getDatasourceFun()
       end)
    self.started = false
+   self.output, self.labels = self.output_cpu, self.labels_cpu
 end
 
 function ThreadedDatasource:type(typ)
@@ -31,18 +36,18 @@ function ThreadedDatasource:type(typ)
    else
       self.output, self.labels = self.output_cpu, self.labels_cpu
    end
-end   
-
 end
 
 function ThreadedDatasource:nextBatch(batchSize, set)
+   assert(batchSize ~= nil, 'nextBatch: must specify batchSize')
+   assert(set ~= nil, 'nextBatch: must specify set')
    local function addjob()
       self.donkeys:addjob(
 	 function()
 	    return datasource_t:nextBatch(batchSize, set)
 	 end,
 	 function(outputs, labels)
-	    self.outputs:resizeAs(outputs):copy(outputs)
+	    self.output:resizeAs(outputs):copy(outputs)
 	    self.labels:resizeAs(labels):copy(labels)
 	    self.last_config = {batchSize, set}
 	 end)
@@ -54,7 +59,7 @@ function ThreadedDatasource:nextBatch(batchSize, set)
       end
    end
    self.last_config = {}
-   while (self.last_config[1] ~= batchSize) or (self.last_config[2] ~= set) do
+   while (self.last_config[1] ~= batchSize) and (self.last_config[2] ~= set) do
       self.donkeys:dojob()
       addjob()
    end
@@ -80,7 +85,7 @@ function ThreadedDatasource:orderedIterator(batchSize, set)
 	    if output == nil then
 	       finished = true
 	    else
-	       self.outputs:resizeAs(outputs):copy(outputs)
+	       self.output:resizeAs(outputs):copy(outputs)
 	       self.labels:resizeAs(labels):copy(labels)
 	    end
 	 end)
@@ -92,7 +97,7 @@ function ThreadedDatasource:orderedIterator(batchSize, set)
 	 self.donkeys:synchronize()
       else
 	 addjob()
-	 return self.outputs, self.labels
+	 return self.output, self.labels
       end
    end
 end
