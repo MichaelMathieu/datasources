@@ -22,6 +22,7 @@ function ThreadedDatasource:__init(getDatasourceFun, params)
 	 require 'os'
 	 torch.manualSeed(threadid*os.clock())
 	 math.randomseed(threadid*os.clock()*1.7)
+	 torch.setnumthreads(1)
 	 threadid_t = threadid
 	 datasource_t = getDatasourceFun()
       end)
@@ -66,17 +67,20 @@ function ThreadedDatasource:nextBatch(batchSize, set)
       for i = 1, self.nDonkeys do
 	 addjob()
       end
+      self.started = true
    end
    self.last_config = {}
    while (self.last_config[1] ~= batchSize) and (self.last_config[2] ~= set) do
       self.donkeys:dojob()
       addjob()
    end
+   --[[
    if self.donkeys:haserror() then
       print("ThreadedDatasource: There is an error in a donkey")
       self.donkeys:terminate()
       os.exit(0)
    end
+   --]]
    return self.output, self.labels
 end
 
