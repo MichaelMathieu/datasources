@@ -30,7 +30,7 @@ end
 
 function SVHNDatasource:nextBatch(batchSize, set)
    assert(batchSize ~= nil, 'nextBatch: must specify batchSize')
-   assert(self.data[set] ~= nil, 'Unknown set ' .. set)
+   assert((self.data[set] ~= nil) or (set == 'train+extra'), 'Unknown set ' .. set)
    self.output_cpu:resize(batchSize, self.nChannels, self.h, self.w)
    self.labels_cpu:resize(batchSize)
    if set == 'train+extra' then
