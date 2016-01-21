@@ -28,12 +28,19 @@ function ClassDatasource:center(trainset, sets)
    end
 end
 
-function ClassDatasource:normalize(trainset, sets)
+function ClassDatasource:normalize(trainset, sets, fullset)
+   local function getminmax(set)
+      if fullset or set:size(1) < 100 then
+	 return set:min(), set:max()
+      else
+	 set = set[{{1,100}}]--:contiguous()
+	 return set:min(), set:max()
+      end
+   end
    -- scales the data between -1 and 1
    if trainset:dim() == 3 then
       -- grayscale
-      local mini = trainset:min()
-      local maxi = trainset:max()
+      local mini, maxi = getminmax(trainset)
       for _, set in pairs(sets) do
 	 set:add(-mini):mul(2/(maxi-mini)):add(-1)
       end
@@ -41,8 +48,7 @@ function ClassDatasource:normalize(trainset, sets)
       -- rgb (or multichannel)
       assert(trainset:dim() == 4)
       for iChannel = 1, trainset:size(2) do
-	 local mini = trainset[{{},iChannel}]:min()
-	 local maxi = trainset[{{},iChannel}]:max()
+	 local mini, maxi = getminmax(trainset[{{},iChannel}])
 	 for _, set in pairs(sets) do
 	    set[{{},iChannel}]:add(-mini):mul(2/(maxi-mini)):add(-1)
 	 end

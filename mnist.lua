@@ -18,7 +18,7 @@ function MNISTDatasource:__init()
    self.data = {train = raw_sets.train.data:type(torch.getdefaulttensortype()),
 		test = raw_sets.test.data:type(torch.getdefaulttensortype())}
    self.labels = {train = raw_sets.train.labels, test = raw_sets.test.labels}
-   self:normalize(self.data.train, self.data)
+   self:normalize(self.data.train, self.data, true)
 
    self.nChannels, self.nClasses = self.data.train:size(2), 10
    self.h, self.w = self.data.train:size(3), self.data.train:size(4)

@@ -22,7 +22,7 @@ function SVHNDatasource:__init()
       self.data[k] = v.X:type(torch.getdefaulttensortype())
       self.labels[k] = v.y:squeeze(1):long()
    end
-   self:normalize(self.data.train, self.data)
+   self:normalize(self.data.train, self.data, false)
 
    self.nChannels, self.nClasses = self.data.train:size(2), 10
    self.h, self.w = self.data.train:size(3), self.data.train:size(4)
