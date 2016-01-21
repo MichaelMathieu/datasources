@@ -37,6 +37,16 @@ function ThreadedDatasource:__init(getDatasourceFun, params)
    self.donkeys:synchronize()
    self.started = false
    self.output, self.labels = self.output_cpu, self.labels_cpu
+
+   -- TODO? does that overrides the parent __gc?:
+   if newproxy then
+      --lua <= 5.1
+      self.__gc__ = newproxy(true)
+      getmetatable(self.__gc__).__gc = 
+	 function() self.output = nil end
+   else
+      self.__gc = function() self.output = nil end
+   end
 end
 
 function ThreadedDatasource:type(typ)
@@ -54,33 +64,39 @@ function ThreadedDatasource:nextBatch(batchSize, set)
    local function addjob()
       self.donkeys:addjob(
 	 function()
-	    return datasource_t:nextBatch(batchSize, set)
+	    local batch, labels = datasource_t:nextBatch(batchSize, set)
+	    return batch, labels
 	 end,
 	 function(outputs, labels)
-	    self.output:resize(outputs:size()):copy(outputs)
-	    self.labels:resize(labels:size()):copy(labels)
-	    self.last_config = {batchSize, set}
+	    if self.output ~= nil then
+	       self.output:resize(outputs:size()):copy(outputs)
+	       self.labels:resize(labels:size()):copy(labels)
+	       self.last_config = {batchSize, set}
+	    end
 	 end)
    end
    if not self.started then
+      self.donkeys:synchronize()
       self.donkeys:specific(false)
       for i = 1, self.nDonkeys do
-	 addjob()
+	 if self.donkeys:acceptsjob() then
+	    addjob()
+	 end
       end
       self.started = true
    end
-   self.last_config = {}
-   while (self.last_config[1] ~= batchSize) and (self.last_config[2] ~= set) do
-      self.donkeys:dojob()
-      addjob()
-   end
-   --[[
+
    if self.donkeys:haserror() then
       print("ThreadedDatasource: There is an error in a donkey")
       self.donkeys:terminate()
       os.exit(0)
    end
-   --]]
+
+   self.last_config = {}
+   while (self.last_config[1] ~= batchSize) or (self.last_config[2] ~= set) do
+      addjob()
+      self.donkeys:dojob()
+   end
    return self.output, self.labels
 end
 
@@ -89,8 +105,8 @@ function ThreadedDatasource:orderedIterator(batchSize, set)
    -- (this might be a TODO but seems hard)
    assert(batchSize ~= nil, 'nextBatch: must specify batchSize')
    assert(set ~= nil, 'nextBatch: must specify set')
-   self.donkeys:specific(true)
    self.donkeys:synchronize()
+   self.donkeys:specific(true)
    self.started = false
    self.donkeys:addjob(
       1, function() it_t = datasource_t:orderedIterator(batchSize, set) end)
@@ -105,8 +121,10 @@ function ThreadedDatasource:orderedIterator(batchSize, set)
 	    if output == nil then
 	       finished = true
 	    else
-	       self.output:resize(output:size()):copy(output)
-	       self.labels:resize(labels:size()):copy(labels)
+	       if self.output ~= nil then
+		  self.output:resize(output:size()):copy(output)
+		  self.labels:resize(labels:size()):copy(labels)
+	       end
 	    end
 	 end)
    end

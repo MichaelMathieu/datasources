@@ -1,14 +1,21 @@
+--[[
+   params:
+   nInputFrames
+--]]
+
 require 'torch'
 require 'io'
 require 'paths'
+print("1")
 require 'thffmpeg'
+print("2")
 require 'datasources.datasource'
 
 local UCF101Datasource, parent = torch.class('UCF101Datasource', 'ClassDatasource')
 
-function UCF101Datasource:__init(nInputFrames)
+function UCF101Datasource:__init(params)
    parent.__init(self)
-   assert(nInputFrames ~= nil, "UCF101Dataset: must specify nInputFrames")
+   assert(params.nInputFrames ~= nil, "UCF101Dataset: must specify nInputFrames")
    self.datapath = '/scratch/datasets/ucf101/UCF-101'
    local setfiles = {train = 'trainlist01.txt', test = 'testlist01.txt'}
    assert(paths.dirp(self.datapath), 'Path ' .. self.datapath .. ' does not exist')
@@ -48,7 +55,7 @@ function UCF101Datasource:__init(nInputFrames)
    end
    self.nbframes = {}
    assert(#self.classes == 101)
-   self.nInputFrames = nInputFrames
+   self.nInputFrames = params.nInputFrames
    self.nChannels, self.nClasses = 3, 101
    self.h, self.w = 240, 320
    self.thffmpeg = THFFmpeg()
@@ -66,7 +73,8 @@ function UCF101Datasource:nextBatch(batchSize, set)
 	 local class = self.classes[iclass]
 	 local idx = torch.random(#self.sets[set][class])
 	 local filepath = paths.concat(self.datapath, class, self.sets[set][class][idx])
-	 if (self.thffmpeg:open(filepath)) then
+	 local result = self.thffmpeg:open(filepath)
+	 if result then
 	    if self.nbframes[filepath] == nil then
 	       self.nbframes[filepath] = self.thffmpeg:length()
 	    end
@@ -80,6 +88,8 @@ function UCF101Datasource:nextBatch(batchSize, set)
 	       end
 	       done = true
 	    end
+	 else
+	    print("can't open", i, threadid_t, filepath)
 	 end
       end
    end
