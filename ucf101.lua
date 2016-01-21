@@ -6,9 +6,7 @@
 require 'torch'
 require 'io'
 require 'paths'
-print("1")
 require 'thffmpeg'
-print("2")
 require 'datasources.datasource'
 
 local UCF101Datasource, parent = torch.class('UCF101Datasource', 'ClassDatasource')
