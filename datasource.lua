@@ -13,16 +13,16 @@ function ClassDatasource:center(trainset, sets)
    if trainset:dim() == 3 then
       local mean = trainset:mean()
       local std = trainset:std()
-      for i = 1, #sets do
-	 sets[i]:add(-mean):div(std)
+      for _, set in pairs(sets) do
+	 set:add(-mean):div(std)
       end
    else
       assert(trainset:dim() == 4)
       for iChannel = 1, trainset:size(2) do
 	 local mean = trainset[{{},iChannel}]:mean()
 	 local std = trainset[{{},iChannel}]:std()
-	 for i = 1, #sets do
-	    sets[i][{{},iChannel}]:add(-mean):div(std)
+	 for _, set in pairs(sets) do
+	    set[{{},iChannel}]:add(-mean):div(std)
 	 end
       end
    end
@@ -34,8 +34,8 @@ function ClassDatasource:normalize(trainset, sets)
       -- grayscale
       local mini = trainset:min()
       local maxi = trainset:max()
-      for i = 1, #sets do
-	 sets[i]:add(-mini):mul(2/(maxi-mini)):add(-1)
+      for _, set in pairs(sets) do
+	 set:add(-mini):mul(2/(maxi-mini)):add(-1)
       end
    else
       -- rgb (or multichannel)
@@ -43,8 +43,8 @@ function ClassDatasource:normalize(trainset, sets)
       for iChannel = 1, trainset:size(2) do
 	 local mini = trainset[{{},iChannel}]:min()
 	 local maxi = trainset[{{},iChannel}]:max()
-	 for i = 1, #sets do
-	    sets[i][{{},iChannel}]:add(-mini):mul(2/(maxi-mini)):add(-1)
+	 for _, set in pairs(sets) do
+	    set[{{},iChannel}]:add(-mini):mul(2/(maxi-mini)):add(-1)
 	 end
       end
    end
