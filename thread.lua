@@ -64,6 +64,7 @@ function ThreadedDatasource:nextBatch(batchSize, set)
    local function addjob()
       self.donkeys:addjob(
 	 function()
+	    collectgarbage()
 	    local batch, labels = datasource_t:nextBatch(batchSize, set)
 	    return batch, labels
 	 end,
@@ -109,7 +110,10 @@ function ThreadedDatasource:orderedIterator(batchSize, set)
    self.donkeys:specific(true)
    self.started = false
    self.donkeys:addjob(
-      1, function() it_t = datasource_t:orderedIterator(batchSize, set) end)
+      1, function()
+	 collectgarbage()
+	 it_t = datasource_t:orderedIterator(batchSize, set) 
+	 end)
    local finished = false
    local function addjob()
       self.donkeys:addjob(
