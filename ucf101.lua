@@ -141,6 +141,7 @@ function UCF101Datasource:orderedIterator(batchSize, set)
 	    end
 	 end
       end
+      self.output_cpu:mul(2/255):add(-1)
       return self:typeResults(self.output_cpu, self.labels_cpu)
    end
 end
