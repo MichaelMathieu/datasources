@@ -1,12 +1,14 @@
 --[[
    params:
-   nInputFrames
+     nInputFrames
+     minimumMotion [nil]
 --]]
 
 require 'torch'
 require 'io'
 require 'paths'
 require 'thffmpeg'
+require 'math'
 require 'datasources.datasource'
 
 local UCF101Datasource, parent = torch.class('UCF101Datasource', 'ClassDatasource')
@@ -54,9 +56,19 @@ function UCF101Datasource:__init(params)
    self.nbframes = {}
    assert(#self.classes == 101)
    self.nInputFrames = params.nInputFrames
+   self.minimumMotion = params.minimumMotion
+   assert((self.minimumMotion == nil) or (self.minimumMotion > 0))
    self.nChannels, self.nClasses = 3, 101
    self.h, self.w = 240, 320
    self.thffmpeg = THFFmpeg()
+end
+
+function UCF101Datasource:testEnoughMotion(frame1, frame2)
+   if self.minimumMotion == nil then
+      return true
+   else
+      return (frame1 - frame2):norm() > math.sqrt(self.minimumMotion * frame1:nElement())
+   end
 end
 
 function UCF101Datasource:nextBatch(batchSize, set)
@@ -84,7 +96,7 @@ function UCF101Datasource:nextBatch(batchSize, set)
 	       for j = 1, self.nInputFrames do
 		  self.thffmpeg:next_frame(self.output_cpu[i][j])
 	       end
-	       done = true
+	       done = self:testEnoughMotion(self.output_cpu[i][-2], self.output_cpu[i][-1])
 	    end
 	 else
 	    print("can't open", i, threadid_t, filepath)
@@ -138,6 +150,50 @@ function UCF101Datasource:orderedIterator(batchSize, set)
 		  end
 	       end
 	       frame_idx = 1
+	    end
+	 end
+      end
+      self.output_cpu:mul(2/255):add(-1)
+      return self:typeResults(self.output_cpu, self.labels_cpu)
+   end
+end
+
+function UCF101Datasource:orderedVideoIterator(batchSize, set)
+   --returns only one sample (the first frames) per video
+   assert(batchSize ~= nil, 'nextBatch: must specify batchSize')
+   assert(self.sets[set] ~= nil, 'Unknown set ' .. set)
+   local class_idx = 1
+   local video_idx = 1
+   local thffmpeg2 = THFFmpeg()
+   return function()
+      self.output_cpu:resize(batchSize, self.nInputFrames, self.nChannels,
+			     self.h, self.w)
+      self.labels_cpu:resize(batchSize)
+      for i = 1, batchSize do
+	 local done = false
+	 while not done do
+	    done = true
+	    local class = self.classes[class_idx]
+	    local filepath = paths.concat(self.datapath, class, self.sets[set][class][video_idx])
+	    if not thffmpeg2:open(filepath) then
+	       done = false
+	    else
+	       self.labels_cpu[i] = class_idx
+	       for j = 1, self.nInputFrames do
+		  if not thffmpeg2:next_frame(self.output_cpu[i][j]) then
+		     done = false
+		     break
+		  end
+	       end
+	    end
+	    video_idx = video_idx + 1
+	    if video_idx > #self.sets[set][class] then
+	       class_idx = class_idx + 1
+	       video_idx = 1
+	       if class_idx > self.nClasses then
+		  thffmpeg2:close()
+		  return nil
+	       end
 	    end
 	 end
       end
