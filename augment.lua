@@ -29,6 +29,8 @@ function AugmentDatasource:__init(datasource, params)
       crop = params.crop or {self.h, self.w},
       scaleup = params.scaleup or 1,
       rotate = params.rotate or 0,
+      cropMinimumMotion = params.cropMinimumMotion or nil,
+      cropMinimumMotionNTries = params.cropMinimumMotionNTries or 25,
    }
 end
 
@@ -71,16 +73,30 @@ local function flip(patch, mode)
    return out
 end
 
-local function crop(patch, hTarget, wTarget)
+local function crop(patch, hTarget, wTarget, minMotion, minMotionNTries)
    local dimy, dimx = dimxy(patch)
    local h, w = patch:size(dimy), patch:size(dimx)
    assert((h >= hTarget) and (w >= wTarget))
    if (h == hTarget) and (w == wTarget) then
       return patch
    else
-      local y = torch.random(1, h-hTarget+1)
-      local x = torch.random(1, w-wTarget+1)
-      return patch:narrow(dimy, y, hTarget):narrow(dimx, x, wTarget)
+      if minMotion then
+	 assert(patch:dim() == 4)
+	 local x, y
+	 for i = 1, minMotionNTries do
+	    y = torch.random(1, h-hTarget+1)
+	    x = torch.random(1, w-wTarget+1)
+	    local cropped = patch:narrow(dimy, y, hTarget):narrow(dimx, x, wTarget)
+	    if (cropped[-1] - cropped[-2]):norm() > math.sqrt(minMotion * cropped[-1]:nElement()) then
+	       break
+	    end
+	 end
+	 return patch:narrow(dimy, y, hTarget):narrow(dimx, x, wTarget)
+      else
+	 local y = torch.random(1, h-hTarget+1)
+	 local x = torch.random(1, w-wTarget+1)
+	 return patch:narrow(dimy, y, hTarget):narrow(dimx, x, wTarget)
+      end
    end
 end
 
@@ -133,7 +149,8 @@ function AugmentDatasource:nextBatch(batchSize, set)
       x = flip(x, self.params.flip)
       x = rotate(x, self.params.rotate)
       x = scaleup(x, self.params.scaleup)
-      x = crop(x, self.params.crop[1], self.params.crop[2])
+      x = crop(x, self.params.crop[1], self.params.crop[2],
+	       self.params.cropMinimumMotion, self.params.cropMinimumMotionNTries)
       input2_out[i]:copy(x)
    end
    return self:typeResults(input2_out, target)
