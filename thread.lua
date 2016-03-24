@@ -14,7 +14,7 @@ local ThreadedDatasource, parent = torch.class('ThreadedDatasource', 'ClassDatas
 function ThreadedDatasource:__init(getDatasourceFun, params)
    parent.__init(self)
    self.nDonkeys = params.nDonkeys or 4
-   threads.Threads.serialization('threads.sharedserialize')
+   --threads.Threads.serialization('threads.sharedserialize') --TODO
    self.donkeys = threads.Threads(self.nDonkeys,
       function(threadid)
 	 require 'torch'
