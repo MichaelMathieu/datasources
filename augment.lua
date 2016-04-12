@@ -13,9 +13,9 @@ function AugmentDatasource:__init(datasource, params)
    parent.__init(self)
    self.datasource = datasource
    self.nChannels, self.nClasses = datasource.nChannels, datasource.nClasses
-   if params.cropSize then
-      assert(#(params.cropSize) == 2)
-      self.h, self.w = params.cropSize[1], params.cropSize[2]
+   if params.crop then
+      assert(#(params.crop) == 2)
+      self.h, self.w = params.crop[1], params.crop[2]
    else
       self.h, self.w = datasource.h, datasource.w
    end
