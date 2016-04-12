@@ -1,6 +1,7 @@
 --[[ params:
    nInputFrames
    frameRate [1]
+   onlyFullDepth [true]
 --]]
 
 require 'datasources.datasource'
@@ -17,6 +18,10 @@ function NYUDepthDatasource:__init(params)
    self.h, self.w = 427, 561
    self.nChannels = 4
    self.nInputFrames = params.nInputFrames
+   self.onlyFullDepth = params.onlyFullDepth
+   if self.onlyFullDepth == nil then
+      self.onlyFullDepth = true
+   end
    self.frameRate = params.frameRate or 1
    self.vids = {}
    for _, v in pairs(paths.dir(self.datapath)) do
@@ -57,7 +62,7 @@ function NYUDepthDatasource:nextBatch(batchSize, set)
 	 for j = 1, self.nInputFrames do
 	    local frame = mattorch.load(paths.concat(self.datapath, video_path, video_ind[frame_idx+(j-1)*self.frameRate]))
 	    local frame_depth = frame.imgDepthFilled
-	    if frame_depth:eq(0):any() then
+	    if self.onlyFullDepth and frame_depth:eq(0):any() then
 	       done = false
 	    else
 	       local frame_rgb = frame.imgRgb
