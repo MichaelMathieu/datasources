@@ -84,6 +84,9 @@ function ImageNetDatasource:orderedIterator(batchSize, set)
    self.labels_cpu:resize(batchSize)
    local classidx, idx = 1, 1
    return function()
+      if classidx > self.nClasses then
+	 return nil
+      end
       for iBatch = 1, batchSize do
 	 if idx > #self.inds[set][classidx] then
 	    classidx = classidx + 1
@@ -92,7 +95,7 @@ function ImageNetDatasource:orderedIterator(batchSize, set)
 	       if iBatch == 1 then
 		  return nil
 	       else
-		  return self.typeResults(self.output_cpu:narrow(1, 1, iBatch-1),
+		  return self:typeResults(self.output_cpu:narrow(1, 1, iBatch-1),
 					  self.labels_cpu:narrow(1, 1, iBatch-1))
 	       end
 	    end

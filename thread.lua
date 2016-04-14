@@ -31,7 +31,7 @@ function ThreadedDatasource:__init(getDatasourceFun, params)
 	 return datasource_t.nChannels, datasource_t.nClasses, datasource_t.h, datasource_t.w
       end,
       function(nChannels, nClasses, h, w)
-	 self.nChannels, self.nClasses = nChannels, self.nClasses
+	 self.nChannels, self.nClasses = nChannels, nClasses
 	 self.h, self.w = h, w
       end)
    self.donkeys:synchronize()
@@ -125,7 +125,7 @@ function ThreadedDatasource:orderedIterator(batchSize, set)
 	    if output == nil then
 	       finished = true
 	    else
-	       if self.output ~= nil then
+	       if self.output ~= nil then --TODO: why is the line useful?
 		  self.output:resize(output:size()):copy(output)
 		  self.labels:resize(labels:size()):copy(labels)
 	       end
