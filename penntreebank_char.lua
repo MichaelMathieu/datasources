@@ -12,7 +12,7 @@ local PTBCharDatasource, parent = torch.class('PTBCharDatasource', 'TextDatasour
 function PTBCharDatasource:__init(params)
    parent.__init(self)
    params = params or {}
-   parems.nMinChars = params.nMinChars or 0
+   params.nMinChars = params.nMinChars or 0
    params.basepath = params.basepath or '/misc/vlgscratch2/LecunGroup/michael/datasets/pentreebank'
    
    -- load txt
