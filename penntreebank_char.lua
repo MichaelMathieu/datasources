@@ -1,5 +1,7 @@
 --[[ params:
    basepath: a folder containing the three txt files
+   nMinChars: min number of chars per sentence (pad with 0) [0]
+   nMaxChars: max number of chars per sentence (crop) [nil]
 --]]
 
 require 'datasources.datasource'
@@ -10,6 +12,7 @@ local PTBCharDatasource, parent = torch.class('PTBCharDatasource', 'TextDatasour
 function PTBCharDatasource:__init(params)
    parent.__init(self)
    params = params or {}
+   parems.nMinChars = params.nMinChars or 0
    params.basepath = params.basepath or '/misc/vlgscratch2/LecunGroup/michael/datasets/pentreebank'
    
    -- load txt
@@ -57,7 +60,7 @@ end
 
 function PTBCharDatasource:nextBatch(batchSize, set)
    assert((batchSize ~= nil) and (self.data[set] ~= nil))
-   local indices, maxlen = {}, 0
+   local indices, maxlen = {}, self.nMinChars
    for i = 1, batchSize do
       indices[i] = torch.random(#self.data[set])
       maxlen = math.max(maxlen, self.data[set][indices[i] ]:size(1))
@@ -67,6 +70,9 @@ function PTBCharDatasource:nextBatch(batchSize, set)
       local sample = self.data[set][indices[i] ]
       self.output_cpu[{{1,sample:size(1)},i}]:copy(sample)
    end
+   if self.nMaxChars ~= nil then
+      self.output_cpu = self.output_cpu:narrow(1,1,self.nMaxChars)
+   end
    return self:typeResults(self.output_cpu)
 end
 
@@ -74,7 +80,7 @@ function PTBCharDatasource:orderedIterator(batchSize, set)
    assert((batchSize ~= nil) and (self.data[set] ~= nil))
    local idx = 1
    return function()
-      local indices, maxlen = {}, 0
+      local indices, maxlen = {}, self.nMinChars
       for i = 1, batchSize do
 	 if idx <= #self.data[set] then
 	    indices[i] = idx
@@ -91,6 +97,9 @@ function PTBCharDatasource:orderedIterator(batchSize, set)
 	 for i = 1, #indices do
 	    local sample = self.data[set][indices[i] ]
 	    self.output_cpu[{{1,sample:size(1)}, i}]:copy(sample)
+	 end
+	 if self.nMaxChars ~= nil then
+	    self.output_cpu = self.output_cpu:narrow(1,1,self.nMaxChars)
 	 end
 	 return self:typeResults(self.output_cpu)
       end
