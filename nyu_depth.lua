@@ -2,6 +2,7 @@
    nInputFrames
    frameRate [1]
    onlyFullDepth [true]
+   basepath [/scratch/datasets/nyudepth/nyudepth_processed]
 --]]
 
 require 'datasources.datasource'
@@ -13,23 +14,31 @@ local NYUDepthDatasource, parent = torch.class('NYUDepthDatasource', 'ClassDatas
 
 function NYUDepthDatasource:__init(params)
    parent.__init(self)
-   self.datapath = '/scratch/datasets/nyudepth/nyudepth_processed'
-   assert(paths.dirp(self.datapath))
+   assert(params ~= nil, 'Must specify parameters')
+   self.basepath = params.basepath or '/scratch/datasets/nyudepth/nyudepth_processed'
+   self.datapaths = {train = paths.concat(self.basepath, 'train'),
+		     test = paths.concat(self.basepath, 'test')}
+   assert(paths.dirp(self.datapaths.train))
+   assert(paths.dirp(self.datapaths.test))
    self.h, self.w = 427, 561
    self.nChannels = 4
    self.nInputFrames = params.nInputFrames
+   assert(self.nInputFrames ~= nil, 'Must specify nInputFrames')
    self.onlyFullDepth = params.onlyFullDepth
    if self.onlyFullDepth == nil then
       self.onlyFullDepth = true
    end
    self.frameRate = params.frameRate or 1
    self.vids = {}
-   for _, v in pairs(paths.dir(self.datapath)) do
-      if v:sub(1,1) ~= '.' then
-	 local index = self:buildIndex(paths.concat(self.datapath, v))
-	 --TODO: save the indices
-	 if #index >= self.nInputFrames then
-	    self.vids[1+#self.vids] = {v, index}
+   for _, set in pairs{'train', 'test'} do
+      self.vids[set] = {}
+      for _, v in pairs(paths.dir(self.datapaths[set])) do
+	 if v:sub(1,1) ~= '.' then
+	    local index = self:buildIndex(paths.concat(self.datapaths[set], v))
+	    --TODO: save the indices
+	    if #index >= self.nInputFrames then
+	       self.vids[set][1+#self.vids[set]] = {v, index}
+	    end
 	 end
       end
    end
@@ -49,18 +58,17 @@ end
 
 function NYUDepthDatasource:nextBatch(batchSize, set)
    assert(batchSize ~= nil, 'nextBatch: must specify batchSize')
-   assert(set == 'train', 'TODO')
    self.output_cpu:resize(batchSize, self.nInputFrames, self.nChannels, self.h, self.w)
    self.labels_cpu:resize(batchSize):zero() --TODO
    for i = 1, batchSize do
       local done = false
       while not done do
 	 done = true
-	 local vid_idx = torch.random(#self.vids)
-	 local video_path, video_ind = unpack(self.vids[vid_idx])
+	 local vid_idx = torch.random(#self.vids[set])
+	 local video_path, video_ind = unpack(self.vids[set][vid_idx])
 	 local frame_idx = torch.random(#video_ind - self.frameRate*(self.nInputFrames-1))
 	 for j = 1, self.nInputFrames do
-	    local frame = mattorch.load(paths.concat(self.datapath, video_path, video_ind[frame_idx+(j-1)*self.frameRate]))
+	    local frame = mattorch.load(paths.concat(self.datapaths[set], video_path, video_ind[frame_idx+(j-1)*self.frameRate]))
 	    local frame_depth = frame.imgDepthFilled
 	    if self.onlyFullDepth and frame_depth:eq(0):any() then
 	       done = false
