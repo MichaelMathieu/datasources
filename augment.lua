@@ -157,8 +157,8 @@ function AugmentDatasource:nextBatch(batchSize, set)
 end
 
 --This has NO data augmentation (you can't iterate over augmented data, it's infinite)
-function AugmentDatasource:orderedIterator(batchSize, set)
-   local it = self.datasource:orderedIterator(batchSize, set)
+function AugmentDatasource:orderedIterator(batchSize, set, extraargs)
+   local it = self.datasource:orderedIterator(batchSize, set, extraargs)
    return function()
       local input, label = it()
       if input ~= nil then
