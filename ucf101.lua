@@ -121,8 +121,13 @@ function UCF101Datasource:nextBatch(batchSize, set)
 end
 
 function UCF101Datasource:orderedIterator(batchSize, set, extraargs)
+   -- if extraargs.ucf101.only_one_sample_per_video == 'first' or 'random'
+   --  then it returns only one set of frames per video
    assert(batchSize ~= nil, 'nextBatch: must specify batchSize')
    assert(self.sets[set] ~= nil, 'Unknown set ' .. set)
+   local extraargs = extraargs or {}
+   local extraargs = extraargs.ucf101 or {}
+   local onesamplepervid = extraargs.only_one_sample_per_video
    local class_idx = 1
    local video_idx = 1
    local frame_idx = 1
@@ -134,11 +139,17 @@ function UCF101Datasource:orderedIterator(batchSize, set, extraargs)
       for i = 1, batchSize do
 	 local done = false
 	 while not done do
+	    if class_idx > self.nClasses then
+	       return nil
+	    end
 	    local class = self.classes[class_idx]
 	    local filepath = paths.concat(self.datapath, class, self.sets[set][class][video_idx])
 	    local goodvid = true
 	    if frame_idx == 1 then
 	       goodvid = thffmpeg2:open(filepath)
+	       if onesamplepervid == 'random' then
+		  assert('TODO: seek(random(len-nFrames))')
+	       end
 	    end
 	    if goodvid then
 	       self.labels_cpu[i] = class_idx
@@ -159,6 +170,7 @@ function UCF101Datasource:orderedIterator(batchSize, set, extraargs)
 	       done = true
 	       frame_idx = frame_idx + (self.nInputFrames-1)*self.frameRate+1
 	    end
+
 	    if not goodvid then
 	       video_idx = video_idx + 1
 	       if video_idx > #self.sets[set][class] then
@@ -170,6 +182,13 @@ function UCF101Datasource:orderedIterator(batchSize, set, extraargs)
 		  end
 	       end
 	       frame_idx = 1
+	    elseif onesamplepervid then
+	       video_idx = video_idx + 1
+	       if video_idx > #self.sets[set][class] then
+		  class_idx = class_idx + 1
+		  video_idx = 1
+	       end
+	       frame_idx = 1
 	    end
 	 end
       end
@@ -178,54 +197,9 @@ function UCF101Datasource:orderedIterator(batchSize, set, extraargs)
    end
 end
 
-function UCF101Datasource:orderedVideoIterator(batchSize, set)
-   --returns only one sample (the first frames) per video
-   assert(batchSize ~= nil, 'nextBatch: must specify batchSize')
-   assert(self.sets[set] ~= nil, 'Unknown set ' .. set)
-   local class_idx = 1
-   local video_idx = 1
-   local thffmpeg2 = THFFmpeg()
-   return function()
-      self.output_cpu:resize(batchSize, self.nInputFrames, self.nChannels,
-			     self.h, self.w)
-      self.labels_cpu:resize(batchSize)
-      for i = 1, batchSize do
-	 local done = false
-	 while not done do
-	    done = true
-	    local class = self.classes[class_idx]
-	    local filepath = paths.concat(self.datapath, class, self.sets[set][class][video_idx])
-	    if not thffmpeg2:open(filepath) then
-	       done = false
-	    else
-	       self.labels_cpu[i] = class_idx
-	       for j = 1, self.nInputFrames do
-		  if not thffmpeg2:next_frame(self.output_cpu[i][j]) then
-		     done = false
-		     break
-		  end
-		  if j ~= self.nInputFrames then
-		     for k = 1, self.frameRate-1 do
-			if not thffmpeg2:skip_frame() then
-			   done = false
-			   break
-			end
-		     end
-		  end
-	       end
-	    end
-	    video_idx = video_idx + 1
-	    if video_idx > #self.sets[set][class] then
-	       class_idx = class_idx + 1
-	       video_idx = 1
-	       if class_idx > self.nClasses then
-		  thffmpeg2:close()
-		  return nil
-	       end
-	    end
-	 end
-      end
-      self.output_cpu:mul(2/255):add(-1)
-      return self:typeResults(self.output_cpu, self.labels_cpu)
-   end
+function UCF101Datasource:orderedVideoIterator(batchSize, set, extraargs)
+   extraargs = extraargs or {}
+   extraargs.ucf101 = extraargs.ucf101 or {}
+   extraargs.ucf101.only_one_sample_per_video = 'first'
+   return self:orderedIterator(batchSize, set, extraargs)
 end
