@@ -74,6 +74,10 @@ function NYUDepthDatasource:nextBatch(batchSize, set)
 	       done = false
 	    else
 	       local frame_rgb = frame.imgRgb
+	       if frame_rgb == nil then
+		  done = false
+		  break
+	       end
 	       self.output_cpu[i][j][{{1,3}}]:copy(frame_rgb:transpose(2,3))
 	       self.output_cpu[i][j][4]:copy(frame_depth:t())
 	    end
