@@ -101,7 +101,7 @@ function ThreadedDatasource:nextBatch(batchSize, set)
    return self.output, self.labels
 end
 
-function ThreadedDatasource:orderedIterator(batchSize, set)
+function ThreadedDatasource:orderedIterator(batchSize, set, extraargs)
    -- this one doesn't parallelize on more than one thread
    -- (this might be a TODO but seems hard)
    assert(batchSize ~= nil, 'nextBatch: must specify batchSize')
@@ -112,7 +112,7 @@ function ThreadedDatasource:orderedIterator(batchSize, set)
    self.donkeys:addjob(
       1, function()
 	 collectgarbage()
-	 it_t = datasource_t:orderedIterator(batchSize, set) 
+	 it_t = datasource_t:orderedIterator(batchSize, set, extraargs)
 	 end)
    local finished = false
    local function addjob()
