@@ -8,11 +8,14 @@ require 'paths'
 
 local MNISTDatasource, parent = torch.class('MNISTDatasource', 'ClassDatasource')
 
+local data_folder = os.getenv('TORCH_DATASOURCE_PATH') or '/misc/vlgscratch3/LecunGroup/michael/datasets'
+print(data_folder)
+
 function MNISTDatasource:__init()
    parent.__init(self)
    local raw_sets = {
-      train = torch.load('/misc/vlgscratch3/LecunGroup/michael/datasets/mnist/train_28x28.th7'),
-      test = torch.load('/misc/vlgscratch3/LecunGroup/michael/datasets/mnist/test_28x28.th7')
+      train = torch.load(data_folder .. '/mnist/train_28x28.th7'),
+      test = torch.load(data_folder .. '/mnist/test_28x28.th7')
    }
    
    self.data = {train = raw_sets.train.data:type(torch.getdefaulttensortype()),
