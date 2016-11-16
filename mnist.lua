@@ -9,7 +9,6 @@ require 'paths'
 local MNISTDatasource, parent = torch.class('MNISTDatasource', 'ClassDatasource')
 
 local data_folder = os.getenv('TORCH_DATASOURCE_PATH') or '/misc/vlgscratch3/LecunGroup/michael/datasets'
-print(data_folder)
 
 function MNISTDatasource:__init()
    parent.__init(self)
