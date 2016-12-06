@@ -14,13 +14,15 @@ require 'math'
 
 local ImageNetDatasource, parent = torch.class('ImageNetDatasource', 'ClassDatasource')
 
+local data_folder = os.getenv('TORCH_DATASOURCE_PATH') or '/misc/vlgscratch3/LecunGroup/michael/datasets'
+
 function ImageNetDatasource:__init(params)
    parent.__init(self)
    params = params or {}
-   self.path = params.rootpath or '/misc/vlgscratch2/LecunGroup/xz558/public/imagenet/data/class/pp'
+   self.path = params.rootpath or data_folder
    self.dirs = {
-      train = '128x128quality9075/ILSVRC2012_img_train',
-      val = '128x128quality9075/ILSVRC2012_img_val'}
+      train = 'imagenet/128x128quality9075/ILSVRC2012_img_train',
+      val = 'imagenet/128x128quality9075/ILSVRC2012_img_val'}
    self.inds = {
       train = torch.load(paths.concat(self.path, 'index/train.t7b')).files,
       val = torch.load(paths.concat(self.path, 'index/val.t7b')).files}
